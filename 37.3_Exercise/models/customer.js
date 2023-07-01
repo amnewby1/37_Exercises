@@ -26,7 +26,7 @@ class Customer {
        FROM customers
        ORDER BY last_name, first_name`
     );
-    return results.rows.map(c => new Customer(c));
+    return results.rows.map((c) => new Customer(c));
   }
 
   /** get a customer by ID. */
@@ -77,6 +77,42 @@ class Customer {
         [this.firstName, this.lastName, this.phone, this.notes, this.id]
       );
     }
+  }
+
+  fullName() {
+    return `${this.firstName} ${this.lastName}`;
+  }
+
+  static async searchByName(searchTerm) {
+    const results = await db.query(
+      `SELECT id,
+         first_name AS "firstName",
+         last_name AS "lastName",
+         phone,
+         notes
+       FROM customers
+       WHERE lower(first_name) LIKE $1 OR lower(last_name) LIKE $1
+       ORDER BY last_name, first_name`,
+      [`%${searchTerm.toLowerCase()}%`]
+    );
+    return results.rows.map((c) => new Customer(c));
+  }
+
+  static async getTopCustomers() {
+    const results = await db.query(
+      `SELECT customers.id,
+         customers.first_name AS "firstName",
+         customers.last_name AS "lastName",
+         customers.phone,
+         customers.notes,
+         COUNT(reservations.id) AS reservation_count
+       FROM customers
+       LEFT JOIN reservations ON customers.id = reservations.customer_id
+       GROUP BY customers.id
+       ORDER BY reservation_count DESC
+       LIMIT 10`
+    );
+    return results.rows.map((c) => new Customer(c));
   }
 }
 
